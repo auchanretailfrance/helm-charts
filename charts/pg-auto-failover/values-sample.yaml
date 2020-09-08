@@ -1,0 +1,30 @@
+image:
+  pullPolicy: Always
+
+monitor:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+
+node:
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 1
+    limits:
+      memory: 1Gi
+      cpu: 1
+
+metrics:
+  enabled: true
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m

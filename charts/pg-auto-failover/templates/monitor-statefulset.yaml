@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgresql-auto-failover.monitor.fullname" . }}
+  labels:
+    {{- include "postgresql-auto-failover.monitor.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "postgresql-auto-failover.monitor.fullname" . }}-headless
+  selector:
+    matchLabels:
+      {{- include "postgresql-auto-failover.monitor.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.monitor.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "postgresql-auto-failover.monitor.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/opt/configmap/monitor.sh"]
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: PGDATA        
+              value: "{{ .Values.monitor.persistence.mountPath }}/{{ .Values.monitor.dbName }}"
+            - name: PGHOME
+              value: "{{ .Values.monitor.persistence.mountPath }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HEADLESS_MONITOR_SERVICE
+              value: {{ include "postgresql-auto-failover.monitor.fullname" . }}-headless
+            - name: AUTOCTL_NODE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-auto-failover.monitor.fullname" . }}
+                  key: autoctlNodePassword
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" -d "monitor" -h localhost
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 2
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" -d "monitor" -h localhost
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.monitor.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.monitor.persistence.mountPath | quote }}
+            - name: configmap            
+              mountPath: /opt/configmap
+            - name: tls-secret
+              mountPath: /opt/tls-secret/ca.crt
+              subPath: ca.crt
+            - name: tls-secret
+              mountPath: /opt/tls-secret/tls.crt
+              subPath: tls.crt
+            - name: tls-secret
+              mountPath: /opt/tls-secret/tls.key
+              subPath: tls.key
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: configmap
+          configMap:
+            name: {{ include "postgresql-auto-failover.monitor.fullname" . }}
+            defaultMode: 0777
+        - name: tls-secret
+          secret:
+            secretName: {{ include "postgresql-auto-failover.monitor.fullname" . }}-tls
+            defaultMode: 0600
+
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+      {{- if .Values.monitor.persistence.storageClass }}
+        {{- printf "storageClassName: %s" .Values.monitor.persistence.storageClass -}}
+      {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.monitor.persistence.size | quote }}

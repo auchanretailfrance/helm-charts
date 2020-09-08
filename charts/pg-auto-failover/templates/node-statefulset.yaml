@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgresql-auto-failover.node.fullname" . }}
+  labels:
+    {{- include "postgresql-auto-failover.node.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.node.replicas }}
+  serviceName: {{ include "postgresql-auto-failover.node.fullname" . }}-headless
+  selector:
+    matchLabels:
+      {{- include "postgresql-auto-failover.node.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.node.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "postgresql-auto-failover.node.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/opt/configmap/node.sh"]
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: PGDATA        
+              value: "{{ .Values.node.persistence.mountPath }}/{{ .Values.node.dbName }}"
+            - name: PGHOME
+              value: "{{ .Values.node.persistence.mountPath }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PGDATABASE
+              value: "{{ .Values.node.dbName }}"
+            - name: HEADLESS_MONITOR_SERVICE
+              value: {{ include "postgresql-auto-failover.monitor.fullname" . }}-headless
+            - name: HEADLESS_NODE_SERVICE
+              value: {{ include "postgresql-auto-failover.node.fullname" . }}-headless
+            - name: AUTOCTL_NODE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-auto-failover.monitor.fullname" . }}
+                  key: autoctlNodePassword
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-auto-failover.node.fullname" . }}
+                  key: postgresPassword
+            - name: PGAUTOFAILOVER_REPLICATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-auto-failover.node.fullname" . }}
+                  key: pgAutoFailoverReplicatorPassword
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" -h localhost
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 2
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" -h localhost
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.node.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.node.persistence.mountPath | quote }}
+            - name: configmap
+              mountPath: /opt/configmap
+            - name: tls-secret
+              mountPath: /opt/tls-secret/ca.crt
+              subPath: ca.crt
+            - name: tls-secret
+              mountPath: /opt/tls-secret/tls.crt
+              subPath: tls.crt
+            - name: tls-secret
+              mountPath: /opt/tls-secret/tls.key
+              subPath: tls.key              
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: "{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: {{ .Values.metrics.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: 9187
+              protocol: TCP
+          env:
+            - name: DATA_SOURCE_URI
+              value: "localhost:5432/postgres?sslmode=disable"
+            - name: DATA_SOURCE_USER
+              value: "postgres"
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-auto-failover.node.fullname" . }}
+                  key: postgresPassword
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          {{- if .Values.metrics.resources }}
+          resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: configmap
+          configMap:
+            name: {{ include "postgresql-auto-failover.node.fullname" . }}
+            defaultMode: 0777
+        - name: tls-secret
+          secret:
+            secretName: {{ include "postgresql-auto-failover.node.fullname" . }}-tls
+            defaultMode: 0600
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+      {{- if .Values.node.persistence.storageClass }}
+        {{- printf "storageClassName: %s" .Values.node.persistence.storageClass -}}
+      {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.node.persistence.size | quote }}

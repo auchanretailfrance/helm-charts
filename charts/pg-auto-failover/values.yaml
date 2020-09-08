@@ -1,0 +1,85 @@
+image:
+  repository: docker.io/auchanretailfrance/pg-auto-failover
+  pullPolicy: IfNotPresent
+
+monitor:
+  nameOverride: ""
+  fullnameOverride: ""
+  dbName: "monitor"
+  autoctlNodePassword: "h4ckm3"
+  postgresqlConfiguration: |
+    #
+    # Put your configuration overrides here
+    #
+  pgHbaConfiguration: |
+    # TYPE  DATABASE         USER            ADDRESS                 METHOD
+    # "local" is for Unix domain socket connections only
+    local   all              all                                     trust
+    # IPv4 local connections:
+    host    all              all             127.0.0.1/32            trust
+    # IPv6 local connections:
+    host    all              all             ::1/128                 trust
+    # data nodes connections:
+    hostssl pg_auto_failover autoctl_node    all                     scram-sha-256
+
+  persistence:
+    mountPath: /var/lib/postgresql
+    size: 1Gi
+    # storageClass: ""
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+node:
+  nameOverride: ""
+  fullnameOverride: ""
+  dbName: "ha"
+  pgAutoFailoverReplicatorPassword: "ch4ng3m3"
+  postgresPassword: "P0stgr3S"
+  replicas: 3
+
+  postgresqlConfiguration: |
+    #
+    # Put your configuration overrides here
+    #
+  pgHbaConfiguration: |
+    # TYPE  DATABASE         USER            ADDRESS                 METHOD
+    # "local" is for Unix domain socket connections only
+    local   all              all                                     trust
+    # IPv4 local connections:
+    host    all              all             127.0.0.1/32            trust
+    # IPv6 local connections:
+    host    all              all             ::1/128                 trust
+    # other data nodes replication connections:    
+    hostssl replication      all             all                     scram-sha-256
+    # other data nodes and clients connections:
+    hostssl all              all             all                     scram-sha-256
+
+  persistence:
+    mountPath: /var/lib/postgresql
+    size: 1Gi
+    # storageClass: ""
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+metrics:
+  enabled: true
+  image:
+    repository: wrouesnel/postgres_exporter
+    tag: v0.8.0
+    pullPolicy: IfNotPresent
+
+tls:
+  generate: true
+  forceGenerate: false

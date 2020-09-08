@@ -1,0 +1,18 @@
+apiVersion: v1
+entries:
+  pg-auto-failover:
+  - apiVersion: v2
+    appVersion: 12-latest
+    created: "2020-09-08T21:47:05.682841666+02:00"
+    description: A Helm chart for PostgreSQL with pg_auto_failover
+    digest: 33266facd3b6e6490a8486de52b0361246b236f291e24f96fa8ee495114c767d
+    keywords:
+    - postgres
+    - postgresql
+    - pg_auto_failover
+    name: pg-auto-failover
+    type: application
+    urls:
+    - pg-auto-failover-0.1.0.tgz
+    version: 0.1.0
+generated: "2020-09-08T21:47:05.682061118+02:00"

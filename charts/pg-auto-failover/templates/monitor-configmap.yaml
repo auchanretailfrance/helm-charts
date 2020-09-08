@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql-auto-failover.monitor.fullname" . }}
+  labels:
+    {{- include "postgresql-auto-failover.monitor.labels" . | nindent 4 }}
+data:
+  monitor.sh: |+
+    {{ .Files.Get "monitor.sh" | indent 4 | trim }}
+  
+  postgresql.conf: |
+    password_encryption = scram-sha-256
+    hba_file = '/opt/configmap/pg_hba.conf'
+
+  custom-postgresql.conf: |
+    {{ .Values.monitor.postgresqlConfiguration | indent 4 | trim }}
+  
+  pg_hba.conf: |
+    {{ .Values.monitor.pgHbaConfiguration | indent 4 | trim }}

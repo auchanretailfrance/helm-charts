@@ -1,0 +1,14 @@
+apiVersion: v2
+name: pg-auto-failover
+description: A Helm chart for PostgreSQL with pg_auto_failover
+
+type: application
+
+version: 0.1.0
+
+appVersion: 12-latest
+
+keywords:
+  - postgres
+  - postgresql
+  - pg_auto_failover
