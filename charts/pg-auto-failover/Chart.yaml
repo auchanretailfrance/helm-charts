@@ -6,7 +6,7 @@ type: application
 
 version: 0.1.1
 
-appVersion: 12-latest
+appVersion: 12-1.4
 
 keywords:
   - postgres
