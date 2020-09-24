@@ -1,0 +1,29 @@
+= Auchan Retail France OSS helm charts
+
+== pg-auto-failover
+
+The goal of this chart is to help deploying in Kubernetes a PostgreSQL cluster managed by link:https://github.com/citusdata/pg_auto_failover#readme[pg_auto_failover].
+
+⚠️ We highly recommended to have a deep look to link:https://pg-auto-failover.readthedocs.io/en/latest/[pg_auto_failover] documentation before giving a try to this chart.
+
+This chart is deploying two link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[stafulsets]:
+
+* link:https://pg-auto-failover.readthedocs.io/en/latest/architecture.html#the-pg-auto-failover-monitor[monitor], with only one replica, orchestrating nodes.
+* link:https://pg-auto-failover.readthedocs.io/en/latest/architecture.html#node[node], controlling instances hosting the data, replicated. 
+
+
+This chart is using docker images containing link:https://github.com/auchanretailfrance/docker-images#postgresql--pg_auto_failover[PostgreSQL + pg_auto_failover].
+
+=== Compatiblity
+
+* pg_auto_failover 1.4.0
+
+=== Choices
+
+* TLS: all traffic is TLS encrypted between instances.
+Certificates can be provided using kubernetes secrets or generated at install time.
+* link:https://www.postgresql.org/docs/current/auth-password.html[scram-sha-256] password authentication.
+
+=== Parameters
+
+See link:./charts/pg-auto-failover/templates/values.yaml[values.yaml]
