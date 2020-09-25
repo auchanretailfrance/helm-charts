@@ -4,7 +4,7 @@ description: A Helm chart for PostgreSQL with pg_auto_failover
 
 type: application
 
-version: 0.1.1
+version: 0.1.2
 
 appVersion: 12-1.4
 

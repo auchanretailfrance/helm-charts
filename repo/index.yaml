@@ -3,7 +3,21 @@ entries:
   pg-auto-failover:
   - apiVersion: v2
     appVersion: 12-1.4
-    created: "2020-09-24T15:42:45.168647004+02:00"
+    created: "2020-09-25T18:10:01.006528018+02:00"
+    description: A Helm chart for PostgreSQL with pg_auto_failover
+    digest: 99bbde1a2beebc55142fc98748833d62e89196bd1bae91dcd614dcff7ed10f9d
+    keywords:
+    - postgres
+    - postgresql
+    - pg_auto_failover
+    name: pg-auto-failover
+    type: application
+    urls:
+    - pg-auto-failover-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 12-1.4
+    created: "2020-09-25T18:10:01.005258123+02:00"
     description: A Helm chart for PostgreSQL with pg_auto_failover
     digest: 162358bc1f35e17584a2a2bd7ce046f02e091e823b9d574af2cddf33a3daffe1
     keywords:
@@ -17,7 +31,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 12-latest
-    created: "2020-09-24T15:42:45.168032735+02:00"
+    created: "2020-09-25T18:10:01.004661989+02:00"
     description: A Helm chart for PostgreSQL with pg_auto_failover
     digest: 33266facd3b6e6490a8486de52b0361246b236f291e24f96fa8ee495114c767d
     keywords:
@@ -29,4 +43,4 @@ entries:
     urls:
     - pg-auto-failover-0.1.0.tgz
     version: 0.1.0
-generated: "2020-09-24T15:42:45.167369653+02:00"
+generated: "2020-09-25T18:10:01.003981902+02:00"

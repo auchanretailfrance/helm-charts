@@ -20,7 +20,7 @@ if [ ! -f $PGDATA/PG_VERSION ]; then
   MONITOR_FQDN="$HEADLESS_MONITOR_SERVICE.$K8S_NAMESPACE.svc.cluster.local"
   chown -R postgres $PGHOME
   gosu postgres echo "$MONITOR_FQDN:5432:pg_auto_failover:autoctl_node:$AUTOCTL_NODE_PASSWORD" > $PGHOME/.pgpass
-  gosu postgres echo "*:5432:replication:pgautofailover_replicator:$PGAUTOFAILOVER_REPLICATOR_PASSWORD" >> $PGHOME/.pgpass
+  gosu postgres echo "*:5432:*:pgautofailover_replicator:$PGAUTOFAILOVER_REPLICATOR_PASSWORD" >> $PGHOME/.pgpass
   chown postgres $PGHOME/.pgpass
   chmod 600 $PGHOME/.pgpass
   chown -R postgres $PGDATA
